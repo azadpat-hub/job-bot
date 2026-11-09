@@ -26,10 +26,17 @@ const client = new Client({
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-extensions',
+            '--disable-background-networking',
+            '--disable-sync',
+            '--disable-default-apps',
+            '--no-zygote',
+            '--single-process'
         ]
     }
 });
+
 const ALLOWED_GROUPS = [
     'नोकरी (जि-सांगली)',
     'नोकरी (जि-कोल्हापूर) 1',
