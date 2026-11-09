@@ -15,7 +15,7 @@ app.listen(PORT, () => console.log('Web server started'));
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: 'job-bot' }),
     puppeteer: {
-    executablePath: '/opt/render/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
+    executablePath: '/opt/render/project/src/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
     headless: true,
         args: [
             '--no-sandbox',
