@@ -1,64 +1,185 @@
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const cron = require('node-cron');
 const express = require('express');
-const app = express();
 
-// Render la jivant thevnyasathi
-app.get('/', (req, res) => res.send('BOT CHALU AAHE - 9172754544'));
-app.listen(process.env.PORT || 3000, () => console.log('Server chalu'));
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('JOB BOT IS RUNNING');
+});
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'running' });
+});
+
+app.listen(PORT, () => {
+    console.log('Web server started on port ' + PORT);
+});
 
 const client = new Client({
-    authStrategy: new LocalAuth({ clientId: "bot-9172754544" }),
+    authStrategy: new LocalAuth({
+        clientId: 'job-bot'
+    }),
     puppeteer: {
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu'
+        ]
     }
 });
 
 const ALLOWED_GROUPS = [
-    "नोकरी (जि-सांगली)",
-    "नोकरी (जि-कोल्हापूर) 1",
-    "नोकरी (जि-कोल्हापूर) 2"
+    'नोकरी (जि-सांगली)',
+    'नोकरी (जि-कोल्हापूर) 1',
+    'नोकरी (जि-कोल्हापूर) 2'
 ];
 
-const SARKARI = `📢 *SARKARI NOKRI*\n1. MPSC - mpsc.gov.in\n2. Police - mahapolice.gov.in\n3. Railway - rrbapply.gov.in\n4. SSC - ssc.gov.in`;
-const PRIVATE = `💼 *PRIVATE JOB - Sangli / Kolhapur*\n1. MIDC Helper / Operator - 15k-25k\n2. IT Fresher - naukri.com\n3. Work From Home - Data Entry - apna.co`;
-const GK = `🧠 *AAJCHA GK*\nQ: Maharashtra chi rajdhani? A: Mumbai\nQ: Kolhapur cha mandir? A: Mahalaxmi\nQ: Sangli chi draksha? A: Tasgaon`;
+const SARKARI = `📢 *SARKARI NOKRI*
 
-client.on('qr', qr => {
-    console.log('QR CODE:');
-    qrcode.generate(qr, {small: true});
-    // Render Logs madhe QR disel, to scan kara
-});
+1. MPSC - https://mpsc.gov.in
+2. Police - https://mahapolice.gov.in
+3. Railway - https://rrbapply.gov.in
+4. SSC - https://ssc.gov.in
 
-client.on('ready', () => {
-    console.log('✅ BOT READY - 3 GROUP');
-    cron.schedule('0 8 * * *', async () => {
+अर्ज करण्यापूर्वी अधिकृत जाहिरात तपासा.`;
+
+const PRIVATE = `💼 *PRIVATE JOB - Sangli / Kolhapur*
+
+1. MIDC Helper / Operator - 15k-25k
+2. IT Fresher - naukri.com
+3. Work From Home - apna.co
+
+टीप: या नमुना संधी आहेत. अर्जापूर्वी नोकरीची सत्यता तपासा.`;
+
+const GK = `🧠 *AAJCHA GK*
+
+Q: Maharashtra chi rajdhani?
+A: Mumbai
+
+Q: Kolhapur che prasiddha mandir?
+A: Mahalaxmi
+
+Q: Sangli madhil prasiddha draksha kendra?
+A: Tasgaon`;
+
+const MENU = `🤖 *NOKRI BOT*
+
+JOB - Sarkari + Private
+SARKARI - Fakt Sarkari
+PRIVATE - Fakt Private
+GK - General Knowledge
+MENU - Commands paha`;
+
+async function sendToGroups(message) {
+    try {
         const chats = await client.getChats();
-        for (let c of chats) {
-            if (c.isGroup && ALLOWED_GROUPS.includes(c.name)) {
-                await client.sendMessage(c.id._serialized, SARKARI + "\n\n" + PRIVATE);
+
+        for (const chat of chats) {
+            if (
+                chat.isGroup &&
+                ALLOWED_GROUPS.includes(chat.name)
+            ) {
+                try {
+                    await client.sendMessage(
+                        chat.id._serialized,
+                        message
+                    );
+                    console.log('Message sent: ' + chat.name);
+                } catch (err) {
+                    console.error(
+                        'Group error: ' + chat.name,
+                        err.message
+                    );
+                }
             }
         }
+    } catch (err) {
+        console.error('Send error:', err.message);
+    }
+}
+
+client.on('qr', qr => {
+    console.log('SCAN QR CODE');
+    qrcode.generate(qr, { small: true });
+});
+
+client.on('authenticated', () => {
+    console.log('WhatsApp authenticated');
+});
+
+let schedulesStarted = false;
+
+client.on('ready', () => {
+    console.log('BOT READY - WhatsApp Connected');
+
+    if (schedulesStarted) return;
+    schedulesStarted = true;
+
+    cron.schedule('0 8 * * *', async () => {
+        console.log('Morning job message');
+        await sendToGroups(SARKARI + '\n\n' + PRIVATE);
+    }, {
+        timezone: 'Asia/Kolkata'
     });
+
     cron.schedule('0 12 * * *', async () => {
-        const chats = await client.getChats();
-        for (let c of chats) {
-            if (c.isGroup && ALLOWED_GROUPS.includes(c.name)) await client.sendMessage(c.id._serialized, GK);
-        }
+        console.log('Afternoon GK message');
+        await sendToGroups(GK);
+    }, {
+        timezone: 'Asia/Kolkata'
     });
 });
 
 client.on('message', async msg => {
-    const chat = await msg.getChat();
-    if (!chat.isGroup || !ALLOWED_GROUPS.includes(chat.name)) return;
-    const t = msg.body.toLowerCase().trim();
-    if (['hi','menu','job','nokri'].includes(t)) return msg.reply(`🤖 *NOKRI BOT - ${chat.name}*\n\n*JOB* - Sarkari + Private\n*SARKARI* - Fakt Sarkari\n*PRIVATE* - Fakt Private\n*GK* - General Knowledge`);
-    if (t === 'job') return msg.reply(SARKARI + "\n\n" + PRIVATE);
-    if (t === 'sarkari') return msg.reply(SARKARI);
-    if (t === 'private') return msg.reply(PRIVATE);
-    if (t === 'gk') return msg.reply(GK);
+    try {
+        if (msg.fromMe) return;
+
+        const chat = await msg.getChat();
+
+        if (!chat.isGroup) return;
+        if (!ALLOWED_GROUPS.includes(chat.name)) return;
+
+        const command = msg.body.toLowerCase().trim();
+
+        if (['hi', 'hello', 'menu', 'nokri'].includes(command)) {
+            return msg.reply(MENU);
+        }
+
+        if (command === 'job') {
+            return msg.reply(SARKARI + '\n\n' + PRIVATE);
+        }
+
+        if (command === 'sarkari') {
+            return msg.reply(SARKARI);
+        }
+
+        if (command === 'private') {
+            return msg.reply(PRIVATE);
+        }
+
+        if (command === 'gk') {
+            return msg.reply(GK);
+        }
+
+    } catch (err) {
+        console.error('Message error:', err.message);
+    }
 });
 
-client.initialize();
+client.on('auth_failure', msg => {
+    console.error('Authentication failed:', msg);
+});
+
+client.on('disconnected', reason => {
+    console.log('WhatsApp disconnected:', reason);
+});
+
+client.initialize().catch(err => {
+    console.error('Bot initialization error:', err);
+});
