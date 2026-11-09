@@ -1,7 +1,0 @@
-services:
-    - type: web
-    name: job-bot-9172754544
-    env: node
-    buildCommand: npm install
-    startCommand: npm start
-    plan: free
