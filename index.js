@@ -14,9 +14,14 @@ app.listen(PORT, () => console.log('Web server started'));
 
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: 'job-bot' }),
+
+    webVersionCache: {
+        type: 'none'
+    },
+
     puppeteer: {
-    executablePath: '/opt/render/project/src/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
-    headless: true,
+        executablePath: '/opt/render/project/src/.cache/puppeteer/chrome/linux-146.0.7680.31/chrome-linux64/chrome',
+        headless: true,
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -25,7 +30,6 @@ const client = new Client({
         ]
     }
 });
-
 const ALLOWED_GROUPS = [
     'नोकरी (जि-सांगली)',
     'नोकरी (जि-कोल्हापूर) 1',
