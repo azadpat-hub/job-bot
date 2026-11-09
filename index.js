@@ -143,4 +143,5 @@ client.on('message', async msg => {
 client.on('auth_failure', msg => console.error('Authentication failed:', msg));
 client.on('disconnected', reason => console.log('Disconnected:', reason));
 
+console.log('Starting WhatsApp Client...');
 client.initialize().catch(err => console.error('Initialization error:', err));
