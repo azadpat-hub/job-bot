@@ -11,8 +11,10 @@ let lastQr = '';
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: 'job-bot' }),
 
+    // हे अपडेट करा
     webVersionCache: {
-        type: 'none'
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018514930-alpha.html',
     },
 
     puppeteer: {
