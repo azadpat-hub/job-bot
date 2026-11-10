@@ -1,17 +1,13 @@
-
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode'); // ब्राऊझरवर क्यूआर इमेज दाखवण्यासाठी
 const cron = require('node-cron');
 const express = require('express');
-
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('JOB BOT IS RUNNING'));
-app.get('/health', (req, res) => res.json({ status: 'running' }));
+let lastQr = '';
 
-app.listen(PORT, () => console.log('Web server started'));
-
+// 1. आधी Client इन्स्टन्स तयार करा
 const client = new Client({
     authStrategy: new LocalAuth({ clientId: 'job-bot' }),
 
@@ -37,6 +33,29 @@ const client = new Client({
     }
 });
 
+// 2. एक्सप्रेस वेब पेज (येथे थेट स्कॅन करण्यायोग्य QR Code इमेज दिसेल)
+app.get('/', async (req, res) => {
+    if (!lastQr) {
+        return res.send('<h3>QR Code aashi aala nahi kinva bot already connected aahe! (Refresh after few seconds)</h3>');
+    }
+    try {
+        const urlImage = await QRCode.toDataURL(lastQr);
+        res.send(`
+            <div style="text-align: center; margin-top: 50px;">
+                <h1>WhatsApp QR Code for Job-Bot</h1>
+                <p>Scan this QR code using your WhatsApp linked devices:</p>
+                <img src="${urlImage}" alt="WhatsApp QR Code" style="width: 300px; height: 300px;" />
+            </div>
+        `);
+    } catch (err) {
+        res.status(500).send('Error generating QR code image');
+    }
+});
+
+app.listen(process.env.PORT || 3000, () => {
+    console.log('Express web server is running...');
+});
+
 const ALLOWED_GROUPS = [
     'नोकरी (जि-सांगली)',
     'नोकरी (जि-कोल्हापूर) 1',
@@ -46,7 +65,7 @@ const ALLOWED_GROUPS = [
 const SARKARI = `📢 *SARKARI NOKRI*
 
 1. MPSC - https://mpsc.gov.in
-2. Police - https://mahapolice.gov.in
+​2. Police - https://mahapolice.gov.in
 3. Railway - https://rrbapply.gov.in
 4. SSC - https://ssc.gov.in
 
@@ -55,7 +74,7 @@ const SARKARI = `📢 *SARKARI NOKRI*
 const PRIVATE = `💼 *PRIVATE JOB - Sangli / Kolhapur*
 
 1. MIDC Helper / Operator - 15k-25k
-2. IT Fresher - naukri.com
+​2. IT Fresher - naukri.com
 3. Work From Home - apna.co
 
 टीप: या नमुना संधी आहेत. अर्जापूर्वी सत्यता तपासा.`;
@@ -106,12 +125,17 @@ async function sendToGroups(message) {
     }
 }
 
+// 3. QR इव्हेंट हँडलर
 client.on('qr', qr => {
-    console.log('SCAN QR CODE');
+    lastQr = qr;
+    console.log('QR RECEIVED - View on your Render Web URL');
     qrcode.generate(qr, { small: true });
 });
 
-client.on('authenticated', () => console.log('WhatsApp authenticated'));
+client.on('authenticated', () => {
+    console.log('WhatsApp authenticated');
+    lastQr = ''; // एकदा लॉगीन झाल्यावर QR क्लिन करा
+});
 
 client.on('ready', () => {
     console.log('BOT READY - WhatsApp Connected');
