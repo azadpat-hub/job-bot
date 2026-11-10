@@ -9,9 +9,11 @@ let lastQr = '';
 
 // 1. आधी Client इन्स्टन्स तयार करा
 const client = new Client({
-    authStrategy: new LocalAuth({ clientId: 'job-bot' }),
+    authStrategy: new LocalAuth({ 
+        clientId: 'job-bot',
+        dataPath: './whatsapp-session' // सेशन डेटा सेव्ह करण्यासाठी फोल्डर दिले
+    }),
 
-    // हे अपडेट करा
     webVersionCache: {
         type: 'remote',
         remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018514930-alpha.html',
